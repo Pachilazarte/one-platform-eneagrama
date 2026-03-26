@@ -758,10 +758,11 @@ function enviarInformesPendientes() {
      // destinatarios.push(emailUser);
     //}
     // Enviar solo al admin
-    var destinatarios = [];
-    if (emailAdmin && emailAdmin.indexOf('@') > 0) {
-      destinatarios.push(emailAdmin);
-    }
+// Enviar solo al usuario evaluado
+var destinatarios = [];
+if (emailUser && emailUser.indexOf('@') > 0) {
+  destinatarios.push(emailUser);
+}
 
     if (destinatarios.length === 0) {
       Logger.log('Fila ' + rowNum + ': sin emails validos. Saltando.');
@@ -775,11 +776,11 @@ function enviarInformesPendientes() {
       var subject = 'Informe Eneagrama | ' + nombreCompleto;
       var htmlBody = construirEmailHTML(nombreCompleto, adminName, fecha, pdfUrl);
 
-      var mailOptions = {
-        htmlBody: htmlBody,
-        name: 'Escencial Consultora - Test Eneagrama'
-        // attachments: ...  <-- ELIMINADO
-      };
+var mailOptions = {
+    htmlBody: htmlBody,
+    name: 'Escencial Consultora - Test Eneagrama',
+    cc: emailAdmin
+};
 
       // Cuerpo de texto plano (fallback si el cliente no soporta HTML)
       var plainBody = 'Su Informe Eneagrama ya está disponible. Acceda aquí: ' + pdfUrl;
@@ -933,7 +934,7 @@ function construirEmailHTML(nombreCompleto, adminName, fecha, pdfUrl) {
   '</body></html>'; 
 }
 
-Link: https://script.google.com/macros/s/AKfycbx9OfLwuceoPI6QjMuckoO9kFgsYSPTGJWiLAe5l2wUWj5hGt9GPuEd0n6h17HTDr1K/exec
+Link: https://script.google.com/macros/s/AKfycbzca_Myx7QOeFzU6N_EMVWdlBrDJlrATLO2SNE1yxzpSD7jn5HDNdSZQC0pwUd9snUJ/exec
 
 ------------------------------------
 
