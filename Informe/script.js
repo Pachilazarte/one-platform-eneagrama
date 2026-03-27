@@ -13,7 +13,7 @@
   'use strict';
 
   // ── Config ──────────────────────────────────────────────────────────────
-  var APPS_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbx9OfLwuceoPI6QjMuckoO9kFgsYSPTGJWiLAe5l2wUWj5hGt9GPuEd0n6h17HTDr1K/exec';
+  var APPS_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbwiNTw_bEsfSyzQmRKbvaXO2eqVFVlNheSHLAQi5-YYMVkyaBCJdO0aaf786N8-a3b1/exec';
   var NOMBRE_HOJA = 'Respuestas';
 
   // ── Sample data (preview local sin sessionStorage) ───────────────────────
@@ -40,12 +40,10 @@
   document.addEventListener('DOMContentLoaded', function () {
 
     // 1. Cargar datos
-    try {
-      var stored = sessionStorage.getItem('eneagramaUserData');
-      _userData = stored ? JSON.parse(stored) : SAMPLE_DATA;
-    } catch (e) {
-      _userData = SAMPLE_DATA;
-    }
+// DESPUÉS — busca en ambas claves:
+var stored = sessionStorage.getItem('eneagramaUserData') 
+          || sessionStorage.getItem('EneagramaUserData');
+_userData = stored ? JSON.parse(stored) : SAMPLE_DATA;
 
     // 2. Calcular resultado
     _resultado = EneagramaCalc.calcularEneagrama(_userData.Respuestas);
@@ -193,7 +191,6 @@
 
 function _guardarFilaEnSheets() {
 
-    // ✅ Si el test ya guardó la fila, reutilizarla (evita duplicado)
     var rowExistente = sessionStorage.getItem('eneagrama_row');
     var idExistente  = sessionStorage.getItem('eneagrama_id');
 
@@ -201,10 +198,9 @@ function _guardarFilaEnSheets() {
         _rowNumber   = parseInt(rowExistente, 10);
         _eneagramaId = idExistente;
         console.log('[Eneagrama] Reutilizando fila existente → row=' + _rowNumber + ' id=' + _eneagramaId);
-        return; // ← No crea fila nueva
+        return;
     }
 
-    // Fallback: si no hay fila previa, crearla
     try {
         var now = new Date();
         var fechaHora = now.toLocaleDateString('es-AR') + ', ' + now.toLocaleTimeString('es-AR');
@@ -224,7 +220,9 @@ function _guardarFilaEnSheets() {
             if (resp && resp.success) {
                 _eneagramaId = resp.eneagrama_id;
                 _rowNumber   = resp.row;
-                console.log('[Eneagrama] Fila guardada (fallback) → row=' + _rowNumber + ' id=' + _eneagramaId);
+                sessionStorage.setItem('eneagrama_id',  _eneagramaId);
+                sessionStorage.setItem('eneagrama_row', String(_rowNumber));
+                console.log('[Eneagrama] Fila guardada → row=' + _rowNumber + ' id=' + _eneagramaId);
             } else {
                 console.warn('[Eneagrama] PASO 1 falló:', resp);
             }

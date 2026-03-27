@@ -239,10 +239,15 @@ function startTest() {
 /**
  * Ver el informe
  */
+// DESPUÉS — guarda los datos con la clave correcta ANTES de redirigir:
 function viewReport() {
     const session = Auth.getSession();
     
-    // Navegar al informe en la misma página
+    // Guardar con la clave que lee Informe/script.js
+    if (userResult) {
+        sessionStorage.setItem('eneagramaUserData', JSON.stringify(userResult));
+    }
+    
     window.location.href = `${CONFIG.routes.informe}?email=${encodeURIComponent(session.userEmail)}`;
 }
 

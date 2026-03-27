@@ -73,7 +73,40 @@
         .btn-primary { background: linear-gradient(135deg, #0b4a6e 0%, #020f27 100%); color: white; box-shadow: 0 4px 15px rgba(11,74,110,0.3); }
         .btn-primary:hover:not(:disabled) { transform: translateY(-2px); box-shadow: 0 6px 20px rgba(11,74,110,0.4); }
         .btn:disabled { opacity: 0.5; cursor: not-allowed; }
-        .result-screen { padding-top: 80px; }
+        .result-screen { padding-top: 40px; }
+        .confirmation-card {
+            text-align: center; padding: 48px 32px;
+            background: white; border-radius: 20px;
+            box-shadow: 0 4px 24px rgba(0,0,0,0.08);
+            max-width: 560px; margin: 0 auto;
+        }
+        .confirmation-icon {
+            width: 72px; height: 72px; border-radius: 50%;
+            background: linear-gradient(135deg, #10b981, #059669);
+            display: flex; align-items: center; justify-content: center;
+            font-size: 36px; color: white; margin: 0 auto 24px;
+            line-height: 72px;
+        }
+        .confirmation-title {
+            font-size: 28px; font-weight: 700; color: #020f27;
+            margin-bottom: 8px; background: none;
+            -webkit-text-fill-color: #020f27;
+        }
+        .confirmation-sub {
+            color: #64748b; font-size: 16px; margin-bottom: 28px;
+        }
+        .confirmation-info {
+            background: #f1f5f9; border-radius: 12px;
+            padding: 20px 24px; text-align: left; margin-bottom: 8px;
+        }
+        .confirmation-info p {
+            color: #334155; font-size: 15px; line-height: 1.7;
+            margin-bottom: 10px;
+        }
+        .confirmation-info p:last-child { margin-bottom: 0; }
+        .confirmation-note {
+            color: #94a3b8 !important; font-size: 13px !important;
+        }
         .result-screen h1 { font-size: 48px; margin-bottom: 24px; background: linear-gradient(135deg, #0b4a6e 0%, #020f27 100%); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
         .result-description { color: #475569; font-size: 18px; line-height: 1.8; margin-bottom: 32px; text-align: center; }
         .charts-container { display: grid; grid-template-columns: 1fr 1fr; gap: 32px; margin-bottom: 32px; }
@@ -139,22 +172,20 @@
     </div>
 
     <div id="resultScreen" class="result-screen hidden">
-        <div id="successMsg" class="success-msg hidden">Tus resultados han sido enviados exitosamente</div>
-        <h1 id="resultType">Tu Eneatipo</h1>
-        <p class="result-description" id="resultDescription"></p>
-        <div class="charts-container">
-            <div class="chart-card">
-                <h3>Distribucion de Eneatipos</h3>
-                <canvas id="radarChart"></canvas>
+        <div class="confirmation-card">
+            <div class="confirmation-icon">&#10003;</div>
+            <h1 class="confirmation-title">Evaluacion completada</h1>
+            <p class="confirmation-sub">Tus respuestas fueron enviadas correctamente.</p>
+            <div class="confirmation-info">
+                <p>Podras ver tu informe completo y descargar tu material personalizado
+                desde la seccion <strong>Mi Panel &rarr; Informe</strong>.</p>
+                <p class="confirmation-note">El analisis de tu perfil Eneagramatico
+                estara disponible en unos instantes.</p>
             </div>
-            <div class="chart-card">
-                <h3>Puntuaciones Detalladas</h3>
-                <div class="distribution-bars" id="distributionBars"></div>
+            <div class="navigation" style="margin-top:32px;">
+                <button class="btn btn-secondary" id="restartBtn">Realizar Nuevo Test</button>
+                <button class="btn btn-primary" id="backPanelBtn">Ir al Panel &#8594;</button>
             </div>
-        </div>
-        <div class="navigation">
-            <button class="btn btn-secondary" id="backPanelBtn">&#8592; Volver al Panel</button>
-            <button class="btn btn-primary" id="restartBtn">Realizar Nuevo Test</button>
         </div>
     </div>
 </div>
@@ -162,7 +193,7 @@
 <script>
 (function() {
 
-var GOOGLE_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbzca_Myx7QOeFzU6N_EMVWdlBrDJlrATLO2SNE1yxzpSD7jn5HDNdSZQC0pwUd9snUJ/exec';
+var GOOGLE_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbwiNTw_bEsfSyzQmRKbvaXO2eqVFVlNheSHLAQi5-YYMVkyaBCJdO0aaf786N8-a3b1/exec';
 var PAGE_LABELS = ['PI','PII','PIII','PIV','PV','PVI','PVII','PVIII','PIX','PX','PXI','PXII'];
 
 var TYPE_NAMES = [null,
@@ -184,60 +215,96 @@ var DESCRIPTIONS = [null,
 ];
 
 var QUESTIONS = [
-    {t:'Con que frecuencia sientes la necesidad de corregir errores o mejorar las cosas a tu alrededor, incluso cuando nadie te lo ha pedido?', ty:1},
-    {t:'Tiendes a anticipar las necesidades de los demas antes de que te las expresen, sintiendo satisfaccion al ayudarlos?', ty:2},
-    {t:'Cuan importante es para ti proyectar una imagen de exito y logro en tu entorno profesional y social?', ty:3},
-    {t:'Sientes que hay algo unico y diferente en ti que te distingue de las demas personas?', ty:4},
-    {t:'Prefieres observar y analizar las situaciones antes de participar activamente en ellas?', ty:5},
-    {t:'Te encuentras frecuentemente anticipando posibles problemas o escenarios negativos antes de tomar decisiones?', ty:6},
-    {t:'Sueles tener multiples planes e ideas emocionantes, sintiendo inquietud cuando la rutina se vuelve monotona?', ty:7},
-    {t:'Te resulta natural tomar el control de las situaciones y defender tus puntos de vista con firmeza?', ty:8},
-    {t:'Prefieres mantener la armonia y evitar conflictos, incluso si eso significa postergar tus propias necesidades?', ty:9},
-    {t:'Te resulta dificil relajarte cuando sabes que hay tareas pendientes o cosas que podrian hacerse mejor?', ty:1},
-    {t:'Sientes incomodidad o frustracion cuando tus esfuerzos por ayudar a otros no son reconocidos o valorados?', ty:2},
-    {t:'Adaptas tu comportamiento o presentacion segun el contexto para causar una mejor impresion?', ty:3},
-    {t:'Experimentas emociones intensas que parecen mas profundas que las de quienes te rodean?', ty:4},
-    {t:'Necesitas tiempo a solas para recargar energias despues de interacciones sociales prolongadas?', ty:5},
-    {t:'Buscas constantemente respaldo o confirmacion antes de comprometerte con decisiones importantes?', ty:6},
-    {t:'Te cuesta permanecer enfocado en una sola actividad cuando surgen nuevas oportunidades interesantes?', ty:7},
-    {t:'Valoras la honestidad directa y te incomoda cuando las personas son evasivas o indecisas?', ty:8},
-    {t:'Te cuesta expresar tus opiniones cuando difieren de las del grupo o podrian generar tension?', ty:9},
-    {t:'Tienes un critico interno que constantemente evalua si estas haciendo las cosas de manera correcta?', ty:1},
-    {t:'Te sientes mas valorado cuando estas siendo util o indispensable para alguien?', ty:2},
-    {t:'Mides tu autoestima en funcion de tus logros y el reconocimiento que recibes?', ty:3},
-    {t:'Sientes nostalgia por experiencias o conexiones que parecen mas autenticas o significativas que tu realidad actual?', ty:4},
-    {t:'Prefieres acumular conocimiento y recursos antes de actuar, para sentirte preparado?', ty:5},
-    {t:'Cuestionas las intenciones de los demas hasta que demuestran ser confiables?', ty:6},
-    {t:'Evitas conscientemente situaciones o emociones que puedan resultar dolorosas o limitantes?', ty:7},
-    {t:'Sientes la necesidad de proteger a quienes percibes como vulnerables o en desventaja?', ty:8},
-    {t:'Postergas la toma de decisiones importantes o te distraes con tareas menos relevantes?', ty:9},
-    {t:'Sientes resentimiento cuando otros no cumplen con los mismos estandares de responsabilidad que tu mantienes?', ty:1},
-    {t:'Te resulta mas facil identificar las necesidades ajenas que reconocer las tuyas propias?', ty:2},
-    {t:'Te sientes incomodo con el fracaso al punto de evitar situaciones donde podrias no destacar?', ty:3},
-    {t:'Sientes que algo esencial falta en tu vida, incluso cuando las cosas van objetivamente bien?', ty:4},
-    {t:'Te resulta agotador cuando otros demandan demasiado de tu tiempo o energia emocional?', ty:5},
-    {t:'Alternas entre buscar autoridad y cuestionarla, dependiendo del contexto?', ty:6},
-    {t:'Mantienes multiples opciones abiertas porque comprometerte con una sola te genera ansiedad?', ty:7},
-    {t:'Te resulta dificil mostrar vulnerabilidad, prefiriendo proyectar fortaleza en todo momento?', ty:8},
-    {t:'Adoptas las opiniones o preferencias de otros para mantener la paz, aunque no coincidan con las tuyas?', ty:9},
-    {t:'Experimentas frustracion cuando las reglas o procedimientos no se siguen adecuadamente?', ty:1},
-    {t:'Sientes que das mas en las relaciones de lo que recibes, pero te cuesta expresarlo directamente?', ty:2},
-    {t:'Te enfocas intensamente en tus metas, a veces descuidando tu bienestar emocional o relaciones personales?', ty:3},
-    {t:'Tiendes a idealizar lo que no tienes mientras desvalorizas lo que esta presente en tu vida?', ty:4},
-    {t:'Prefieres comunicarte por escrito o con tiempo de preparacion en lugar de conversaciones espontaneas?', ty:5},
-    {t:'Tiendes a planificar exhaustivamente para minimizar riesgos e imprevistos?', ty:6},
-    {t:'Reencuadras las experiencias negativas buscando el lado positivo rapidamente?', ty:7},
-    {t:'Prefieres el conflicto directo a la tension no resuelta o la comunicacion pasivo-agresiva?', ty:8},
-    {t:'Te fusionas con las agendas de otros, perdiendo contacto con tus propias prioridades y deseos?', ty:9},
-    {t:'Sientes que hay una forma correcta de hacer las cosas y te frustras cuando no se respeta?', ty:1},
-    {t:'Modificas tu comportamiento para ser querido o aceptado por las personas importantes en tu vida?', ty:2},
-    {t:'Te resulta dificil desconectar del trabajo o pausar tu busqueda de objetivos para simplemente estar?', ty:3},
-    {t:'Sientes atraccion por la belleza, el arte o experiencias que expresan profundidad emocional?', ty:4},
-    {t:'Estableces limites claros en tu vida para proteger tu espacio personal y privacidad?', ty:5},
-    {t:'Te cuesta confiar en tu propio juicio, buscando validacion externa frecuentemente?', ty:6},
-    {t:'Prefieres mantener las conversaciones ligeras y optimistas, evitando temas pesados o dolorosos?', ty:7},
-    {t:'Tienes poca paciencia con la debilidad o la victimizacion, tanto en ti como en otros?', ty:8},
-    {t:'Encuentras dificil identificar que es realmente importante para ti entre todas las demandas externas?', ty:9}
+    {t:"Con que frecuencia sientes la necesidad de corregir errores o mejorar las cosas a tu alrededor, incluso cuando nadie te lo ha pedido?", ty:1},
+    {t:"Tiendes a anticipar las necesidades de los demas antes de que te las expresen, sintiendo satisfaccion al ayudarlos?", ty:2},
+    {t:"Cuan importante es para ti proyectar una imagen de exito y logro en tu entorno profesional y social?", ty:3},
+    {t:"Sientes que hay algo unico y diferente en ti que te distingue de las demas personas?", ty:4},
+    {t:"Prefieres observar y analizar las situaciones antes de participar activamente en ellas?", ty:5},
+    {t:"Te encuentras frecuentemente anticipando posibles problemas o escenarios negativos antes de tomar decisiones?", ty:6},
+    {t:"Sueles tener multiples planes e ideas emocionantes, sintiendo inquietud cuando la rutina se vuelve monotona?", ty:7},
+    {t:"Te resulta natural tomar el control de las situaciones y defender tus puntos de vista con firmeza?", ty:8},
+    {t:"Prefieres mantener la armonia y evitar conflictos, incluso si eso significa postergar tus propias necesidades?", ty:9},
+    {t:"Te resulta dificil relajarte cuando sabes que hay tareas pendientes o cosas que podrian hacerse mejor?", ty:1},
+    {t:"Sientes incomodidad o frustracion cuando tus esfuerzos por ayudar a otros no son reconocidos o valorados?", ty:2},
+    {t:"Adaptas tu comportamiento o presentacion segun el contexto para causar una mejor impresion?", ty:3},
+    {t:"Experimentas emociones intensas que parecen mas profundas que las de quienes te rodean?", ty:4},
+    {t:"Necesitas tiempo a solas para recargar energias despues de interacciones sociales prolongadas?", ty:5},
+    {t:"Buscas constantemente respaldo o confirmacion antes de comprometerte con decisiones importantes?", ty:6},
+    {t:"Te cuesta permanecer enfocado en una sola actividad cuando surgen nuevas oportunidades interesantes?", ty:7},
+    {t:"Valoras la honestidad directa y te incomoda cuando las personas son evasivas o indecisas?", ty:8},
+    {t:"Te cuesta expresar tus opiniones cuando difieren de las del grupo o podrian generar tension?", ty:9},
+    {t:"Tienes un critico interno que constantemente evalua si estas haciendo las cosas de manera correcta?", ty:1},
+    {t:"Te sientes mas valorado cuando estas siendo util o indispensable para alguien?", ty:2},
+    {t:"Mides tu autoestima en funcion de tus logros y el reconocimiento que recibes?", ty:3},
+    {t:"Sientes nostalgia por experiencias o conexiones que parecen mas autenticas o significativas que tu realidad actual?", ty:4},
+    {t:"Prefieres acumular conocimiento y recursos antes de actuar, para sentirte preparado?", ty:5},
+    {t:"Cuestionas las intenciones de los demas hasta que demuestran ser confiables?", ty:6},
+    {t:"Evitas conscientemente situaciones o emociones que puedan resultar dolorosas o limitantes?", ty:7},
+    {t:"Sientes la necesidad de proteger a quienes percibes como vulnerables o en desventaja?", ty:8},
+    {t:"Postergas la toma de decisiones importantes o te distraes con tareas menos relevantes?", ty:9},
+    {t:"Sientes resentimiento cuando otros no cumplen con los mismos estandares de responsabilidad que tu mantienes?", ty:1},
+    {t:"Te resulta mas facil identificar las necesidades ajenas que reconocer las tuyas propias?", ty:2},
+    {t:"Te sientes incomodo con el fracaso al punto de evitar situaciones donde podrias no destacar?", ty:3},
+    {t:"Sientes que algo esencial falta en tu vida, incluso cuando las cosas van objetivamente bien?", ty:4},
+    {t:"Te resulta agotador cuando otros demandan demasiado de tu tiempo o energia emocional?", ty:5},
+    {t:"Alternas entre buscar autoridad y cuestionarla, dependiendo del contexto?", ty:6},
+    {t:"Mantienes multiples opciones abiertas porque comprometerte con una sola te genera ansiedad?", ty:7},
+    {t:"Te resulta dificil mostrar vulnerabilidad, prefiriendo proyectar fortaleza en todo momento?", ty:8},
+    {t:"Adoptas las opiniones o preferencias de otros para mantener la paz, aunque no coincidan con las tuyas?", ty:9},
+    {t:"Experimentas frustracion cuando las reglas o procedimientos no se siguen adecuadamente?", ty:1},
+    {t:"Sientes que das mas en las relaciones de lo que recibes, pero te cuesta expresarlo directamente?", ty:2},
+    {t:"Te enfocas intensamente en tus metas, a veces descuidando tu bienestar emocional o relaciones personales?", ty:3},
+    {t:"Tiendes a idealizar lo que no tienes mientras desvalorizas lo que esta presente en tu vida?", ty:4},
+    {t:"Prefieres comunicarte por escrito o con tiempo de preparacion en lugar de conversaciones espontaneas?", ty:5},
+    {t:"Tiendes a planificar exhaustivamente para minimizar riesgos e imprevistos?", ty:6},
+    {t:"Reencuadras las experiencias negativas buscando el lado positivo rapidamente?", ty:7},
+    {t:"Prefieres el conflicto directo a la tension no resuelta o la comunicacion pasivo-agresiva?", ty:8},
+    {t:"Te fusionas con las agendas de otros, perdiendo contacto con tus propias prioridades y deseos?", ty:9},
+    {t:"Sientes que hay una forma correcta de hacer las cosas y te frustras cuando no se respeta?", ty:1},
+    {t:"Modificas tu comportamiento para ser querido o aceptado por las personas importantes en tu vida?", ty:2},
+    {t:"Te resulta dificil desconectar del trabajo o pausar tu busqueda de objetivos para simplemente estar?", ty:3},
+    {t:"Sientes atraccion por la belleza, el arte o experiencias que expresan profundidad emocional?", ty:4},
+    {t:"Estableces limites claros en tu vida para proteger tu espacio personal y privacidad?", ty:5},
+    {t:"Te cuesta confiar en tu propio juicio, buscando validacion externa frecuentemente?", ty:6},
+    {t:"Prefieres mantener las conversaciones ligeras y optimistas, evitando temas pesados o dolorosos?", ty:7},
+    {t:"Tienes poca paciencia con la debilidad o la victimizacion, tanto en ti como en otros?", ty:8},
+    {t:"Encuentras dificil identificar que es realmente importante para ti entre todas las demandas externas?", ty:9},
+    {t:"Cuando terminas una tarea, sueles revisarla varias veces para asegurarte de que no haya errores?", ty:1},
+    {t:"Tiendes a intuir cuando alguien necesita ayuda antes de que te lo pidan y actuar de inmediato?", ty:2},
+    {t:"Te comparas frecuentemente con otros en terminos de logros o exito para medir tu progreso?", ty:3},
+    {t:"Sientes que pocas personas realmente comprenden la profundidad de tus experiencias internas?", ty:4},
+    {t:"Prefieres entender completamente un tema antes de compartir tu opinion o involucrarte?", ty:5},
+    {t:"Antes de tomar una decision importante, necesitas consultar con personas de confianza para validarla?", ty:6},
+    {t:"Cuando enfrentas situaciones dificiles, tu primer impulso es buscar algo positivo o una nueva salida?", ty:7},
+    {t:"Cuando alguien es injusto o deshonesto, tiendes a confrontarlo directamente sin rodeos?", ty:8},
+    {t:"Cuando hay tension entre personas cercanas, sientes la necesidad de mediar y restaurar la armonia?", ty:9},
+    {t:"Sientes tension interna cuando alguien hace algo de manera incorrecta o ineficiente frente a ti?", ty:1},
+    {t:"Te cuesta decir que no cuando alguien te pide un favor, incluso cuando no tenes tiempo o energia?", ty:2},
+    {t:"Tiendes a presentar la mejor version posible de ti mismo en situaciones sociales o profesionales?", ty:3},
+    {t:"A veces te quedas atrapado en emociones dificiles mas tiempo del que considerarias razonable?", ty:4},
+    {t:"Tiendes a retirarte emocionalmente cuando las situaciones se vuelven muy intensas o demandantes?", ty:5},
+    {t:"Tiendes a imaginar lo que podria salir mal en una situacion incluso cuando todo parece estar bien?", ty:6},
+    {t:"Te aburres rapidamente de las rutinas y buscas activamente nuevas experiencias o proyectos?", ty:7},
+    {t:"Te incomoda profundamente depender de otros o necesitar apoyo externo para lograr tus objetivos?", ty:8},
+    {t:"A veces te das cuenta de que perdiste de vista tus propias necesidades por enfocarte en las de otros?", ty:9},
+    {t:"Te resulta dificil disfrutar el tiempo libre cuando sientes que podrias estar siendo mas productivo?", ty:1},
+    {t:"Tu bienestar emocional depende en gran parte de que las personas cercanas esten bien?", ty:2},
+    {t:"Te resulta dificil descansar genuinamente cuando sientes que otros avanzan mas rapido que tu?", ty:3},
+    {t:"Buscas crear experiencias que reflejen autenticamente quien sos sin importar la opinion ajena?", ty:4},
+    {t:"Valoras tu independencia y autonomia por encima de la conexion social frecuente?", ty:5},
+    {t:"La lealtad y la confianza son valores que defines como absolutamente no negociables para ti?", ty:6},
+    {t:"Te resulta dificil comprometerte con una sola opcion cuando hay muchas posibilidades disponibles?", ty:7},
+    {t:"En situaciones de conflicto, tiendes a intensificar la confrontacion antes que buscar una salida?", ty:8},
+    {t:"Te resulta dificil mantener impulso en proyectos propios cuando no hay presion externa que te mueva?", ty:9},
+    {t:"Tienes estandares muy altos para ti mismo que a veces te resultan dificiles de sostener?", ty:1},
+    {t:"Sientes que tu valor como persona esta ligado a cuanto puedes hacer por los demas?", ty:2},
+    {t:"El reconocimiento publico de tus logros te importa significativamente mas que el proceso en si?", ty:3},
+    {t:"Sientes una tension permanente entre querer pertenecer y necesitar ser diferente al mismo tiempo?", ty:4},
+    {t:"Sientes que tus recursos emocionales son limitados y debes administrarlos cuidadosamente?", ty:5},
+    {t:"Sientes incomodidad ante la ambiguedad o cuando no sabes exactamente que esperar de una situacion?", ty:6},
+    {t:"Prefieres mantener tu agenda flexible en lugar de planificar todo con anticipacion detallada?", ty:7},
+    {t:"Tenes una presencia fuerte que otros perciben rapidamente incluso antes de que digas una palabra?", ty:8},
+    {t:"Prefieres encontrar puntos en comun con las personas antes que enfatizar diferencias que separan?", ty:9}
 ];
 
 var QperPage  = 6;
@@ -435,6 +502,10 @@ function showResults(dom, scores) {
     var loginUser = (sess.userName || '').trim();
 
 
+    // Construir scores como objeto {1:N, 2:N, ...}
+    var scoresObj = {};
+    for (var ts = 1; ts <= 9; ts++) scoresObj[ts] = scores[ts] || 0;
+
     var payload = {
         Nombre:        userName,
         Apellido:      userLast,
@@ -447,7 +518,9 @@ function showResults(dom, scores) {
         Respuestas:    buildRespuestas(),
         Eneatipo:      dom,
         EneatipoNombre: TYPE_NAMES[dom],
-        Informe:       TYPE_NAMES[dom]
+        Informe:       TYPE_NAMES[dom],
+        scores:        scoresObj,
+        percentages:   pct
     };
 
     console.log('SESSION TEST:', sess);
@@ -518,11 +591,6 @@ function doSend(dom, scores, pct) {
     document.getElementById('testScreen').classList.add('hidden');
     document.getElementById('registrationScreen').classList.add('hidden');
     document.getElementById('resultScreen').classList.remove('hidden');
-    document.getElementById('successMsg').classList.remove('hidden');
-    document.getElementById('resultType').textContent = TYPE_NAMES[dom];
-    document.getElementById('resultDescription').textContent = DESCRIPTIONS[dom];
-    drawRadar(pct);
-    drawBars(pct);
 }
 
 
@@ -548,8 +616,8 @@ function drawRadar(pct) {
         options: {
             responsive: true, maintainAspectRatio: true,
             scales: { r: {
-                beginAtZero: true, max: 100, min: 0,
-                ticks: { stepSize: 20, font: { size: 11 } },
+                beginAtZero: true,
+                ticks: { font: { size: 11 }, callback: function(v){ return v+'%'; } },
                 pointLabels: { font: { size: 11, weight: 'bold' }, color: '#020f27' },
                 grid: { color: '#e5e7eb' }, angleLines: { color: '#e5e7eb' }
             }},
@@ -571,9 +639,19 @@ function drawBars(pct) {
         var fill = document.createElement('div'); fill.className = 'bar-fill'; fill.id = 'bar' + i;
         bg.appendChild(fill); item.appendChild(hdr); item.appendChild(bg); ctr.appendChild(item);
     }
+    // Find dominant type for visual highlight
+    var domI = 1;
+    for (var di = 2; di <= 9; di++) { if (pct[di] > pct[domI]) domI = di; }
     setTimeout(function() {
         for (var i = 1; i <= 9; i++) {
-            document.getElementById('bar' + i).style.width = pct[i] + '%';
+            var fill = document.getElementById('bar' + i);
+            // Scale bar width relative to max value for better visibility
+            var maxPct = pct[domI] || 1;
+            fill.style.width = Math.round((pct[i] / maxPct) * 100) + '%';
+            if (i === domI) {
+                fill.style.background = 'linear-gradient(135deg, #1e3a5f 0%, #0b4a6e 100%)';
+                fill.style.height = '14px';
+            }
         }
     }, 100);
 }

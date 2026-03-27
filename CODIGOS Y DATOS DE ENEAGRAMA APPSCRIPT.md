@@ -581,20 +581,46 @@ function doPost(e) {
 
     var cols = ensureHeadersAndGetCols(sheet);
 
-    // ── PASO 1: Guardar fila ──
-    if (!accion && Array.isArray(datosRecibidos.fila)) {
-      var eneagramaId = Utilities.getUuid();
-      var filaCompleta = datosRecibidos.fila.slice();
-      filaCompleta.push(eneagramaId); // Eneagrama_Id
-      filaCompleta.push('');          // Informe_Pdf
-      filaCompleta.push('');          // Email_Enviado
+// ── PASO 1: Guardar fila ──
+if (!accion && Array.isArray(datosRecibidos.fila)) {
+  var filaEntrante = datosRecibidos.fila;
+  var userEvaluado = String(filaEntrante[3] || '').trim(); // Col D = User/Username
 
-      sheet.appendRow(filaCompleta);
-      var row = sheet.getLastRow();
+  // ✅ Buscar si ya existe fila para este usuario evaluado
+  if (userEvaluado) {
+    var lastRow2 = sheet.getLastRow();
+    if (lastRow2 >= 2) {
+      var allData = sheet.getRange(2, 1, lastRow2 - 1, sheet.getLastColumn()).getValues();
+      var colsH   = ensureHeadersAndGetCols(sheet);
+      var colUser = colsH.headers.indexOf('User');
+      var colId   = colsH.headers.indexOf('Eneagrama_Id');
 
-      Logger.log('Fila guardada. Row=' + row + ' Eneagrama_Id=' + eneagramaId);
-      return jsonOut({ success: true, eneagrama_id: eneagramaId, row: row });
+      if (colUser >= 0 && colId >= 0) {
+        for (var i2 = allData.length - 1; i2 >= 0; i2--) {
+          var userExistente = String(allData[i2][colUser] || '').trim();
+          var idExistente2  = String(allData[i2][colId]   || '').trim();
+          if (userExistente.toLowerCase() === userEvaluado.toLowerCase() && idExistente2) {
+            Logger.log('Duplicado detectado para user: ' + userEvaluado + ' → row=' + (i2 + 2));
+            return jsonOut({ success: true, eneagrama_id: idExistente2, row: i2 + 2, _duplicado: true });
+          }
+        }
+      }
     }
+  }
+
+  // No existe → insertar nueva fila
+  var eneagramaId = Utilities.getUuid();
+  var filaCompleta = filaEntrante.slice();
+  filaCompleta.push(eneagramaId);
+  filaCompleta.push('');
+  filaCompleta.push('');
+
+  sheet.appendRow(filaCompleta);
+  var row = sheet.getLastRow();
+
+  Logger.log('Fila guardada. Row=' + row + ' Eneagrama_Id=' + eneagramaId);
+  return jsonOut({ success: true, eneagrama_id: eneagramaId, row: row });
+}
 
     // ── PASO 2: Subir PDF ──
     if (accion === 'guardarPdf') {
@@ -934,7 +960,7 @@ function construirEmailHTML(nombreCompleto, adminName, fecha, pdfUrl) {
   '</body></html>'; 
 }
 
-Link: https://script.google.com/macros/s/AKfycbzca_Myx7QOeFzU6N_EMVWdlBrDJlrATLO2SNE1yxzpSD7jn5HDNdSZQC0pwUd9snUJ/exec
+Link: https://script.google.com/macros/s/AKfycbwiNTw_bEsfSyzQmRKbvaXO2eqVFVlNheSHLAQi5-YYMVkyaBCJdO0aaf786N8-a3b1/exec
 
 ------------------------------------
 

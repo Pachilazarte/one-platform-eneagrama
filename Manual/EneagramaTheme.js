@@ -1,8 +1,12 @@
 (function () {
   'use strict';
 
-  const jsPDF = window.jspdf?.jsPDF;
-  if (!jsPDF) throw new Error('jsPDF no esta cargado.');
+  // jsPDF se verifica en tiempo de uso, no de carga
+  function getJsPDF() {
+    var j = window.jspdf && window.jspdf.jsPDF;
+    if (!j) throw new Error('jsPDF no esta cargado. Asegurate de cargar jspdf.umd.min.js antes de EneagramaTheme.js');
+    return j;
+  }
 
   /* COLOR SYSTEM */
   const C = {
@@ -473,7 +477,7 @@
   }
 
   function render(model){
-    const doc=new jsPDF({orientation:'p',unit:'mm',format:'a4'});
+    const doc=new (getJsPDF())({orientation:'p',unit:'mm',format:'a4'});
     drawCover(doc,model);
     drawTOC(doc,model);
     model.sections.forEach((sec,i)=>renderSection(doc,model,sec,i));

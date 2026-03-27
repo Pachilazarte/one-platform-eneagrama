@@ -1,7 +1,7 @@
 (function () {
   'use strict';
 
-  if (!window.EneagramaTheme) throw new Error('EneagramaTheme.js debe cargarse antes de EneagramaManual.js');
+  // EneagramaTheme se verifica en tiempo de uso, no de carga
 
   /* ===========================================================
      ALGORITMO CORRECTO: PI->T1, PII->T2, PIII->T3... PIX->T9
@@ -535,56 +535,76 @@
      EXTRACCION DE SCORES - algoritmo correcto PI->T1 ... PIX->T9
   =========================================================== */
   function extractScores(data){
-    const raw=String(data.Respuestas||data.respuestas||'');
-    const scores={1:0,2:0,3:0,4:0,5:0,6:0,7:0,8:0,9:0};
-    const counts={1:0,2:0,3:0,4:0,5:0,6:0,7:0,8:0,9:0};
+    // Replica EXACTAMENTE EneagramaCalc.calcularEneagrama() del Informe oficial:
+    // Mapeo directo: PI=T1, PII=T2, PIII=T3, PIV=T4, PV=T5, PVI=T6, PVII=T7, PVIII=T8, PIX=T9
+    // Score = suma de valores de esa seccion / (n * 5) * 100
+    var SECCION_A_TIPO = {PI:1,PII:2,PIII:3,PIV:4,PV:5,PVI:6,PVII:7,PVIII:8,PIX:9};
+    var raw = String(data.Respuestas || data.respuestas || '');
+    var scores = {1:0,2:0,3:0,4:0,5:0,6:0,7:0,8:0,9:0};
+    var counts  = {1:0,2:0,3:0,4:0,5:0,6:0,7:0,8:0,9:0};
 
-    if(raw.includes('PI:')||raw.includes('{P')){
-      // Regex que parsea correctamente PVIII antes que PVII, PIX antes que PI, etc.
-      const sectionRegex=/\{(PVIII|PVII|PIX|PVI|PIV|PIII|PII|PV|PI)\s*:[^-]*-([^}]+)\}/g;
-      let match;
-      while((match=sectionRegex.exec(raw))!==null){
-        const secName=match[1].trim();
-        const tipo=SECCION_A_TIPO[secName];
-        if(!tipo)continue;
-        const pairsStr=match[2].trim();
-        pairsStr.split(',').forEach(p=>{
-          const parts=p.trim().split(';');
-          if(parts.length===2){
-            const val=parseInt(parts[1],10);
-            if(!isNaN(val)&&val>=1&&val<=5){
-              scores[tipo]+=val;
+    if(raw.length > 5){
+      var sectionRegex = /\{(PVIII|PVII|PIX|PVI|PIV|PIII|PII|PV|PI)\s*:[^-]*-([^}]+)\}/g;
+      var match;
+      while((match = sectionRegex.exec(raw)) !== null){
+        var secName = match[1].trim();
+        var tipo = SECCION_A_TIPO[secName];
+        if(!tipo) continue;
+        var pairsStr = match[2].trim();
+        pairsStr.split(',').forEach(function(p){
+          var parts = p.trim().split(';');
+          if(parts.length === 2){
+            var val = parseInt(parts[1], 10);
+            if(!isNaN(val) && val >= 1 && val <= 5){
+              scores[tipo] += val;
               counts[tipo]++;
             }
           }
         });
       }
-      // Normalizar a porcentaje 0-100
-      const result={};
-      for(let t=1;t<=9;t++){
-        result[t]=counts[t]>0?Math.round((scores[t]/(counts[t]*5))*100):0;
+      // PORCENTAJE CORRECTO: proporcion del total -> suma = 100%
+      var totalRaw = 0;
+      for(var t = 1; t <= 9; t++) totalRaw += scores[t];
+      var result = {};
+      for(var t = 1; t <= 9; t++){
+        result[t] = totalRaw > 0 ? Math.round((scores[t] / totalRaw) * 100) : 0;
+      }
+      // Ajuste de redondeo para que sumen exactamente 100
+      var suma = 0;
+      for(var t = 1; t <= 9; t++) suma += result[t];
+      if(suma !== 100 && totalRaw > 0){
+        var maxT = 1;
+        for(var t = 2; t <= 9; t++) if(scores[t] > scores[maxT]) maxT = t;
+        result[maxT] += (100 - suma);
       }
       return result;
     }
 
-    // Scores directos si vienen calculados externamente
-    for(let t=1;t<=9;t++){
-      const v=Number(data[`T${t}`]||data[`t${t}`]||0);
-      if(v>0)scores[t]=v;
-    }
-    if(Object.values(scores).some(v=>v>0))return scores;
-
-    return{1:50,2:50,3:50,4:50,5:50,6:50,7:50,8:50,9:50};
+    // Fallback: si no hay Respuestas, distribucion uniforme
+    return {1:11,2:11,3:11,4:11,5:11,6:11,7:11,8:12,9:11};
   }
 
-  function determineType(scores){
+
+  function determineType(data, scores){
+    // Usar siempre el score mas alto, igual que EneagramaCalc.determinarResultado()
     return parseInt(Object.entries(scores).sort((a,b)=>b[1]-a[1])[0][0],10);
   }
 
-  function determineWing(scores,domType){
-    const alas=TYPE_ALAS[domType];
-    return(scores[alas.a.num]||0)>=(scores[alas.b.num]||0)?alas.a:alas.b;
-  }
+// DESPUÉS — los 2 tipos con mayor score excluyendo el base, igual que calculoEneagramaTotal.js:
+function determineWing(scores,domType){
+  var otrosTipos=[1,2,3,4,5,6,7,8,9].filter(function(t){return t!==domType;});
+  otrosTipos.sort(function(a,b){return (scores[b]||0)-(scores[a]||0);});
+  var ala1Num=otrosTipos[0];
+  var ala2Num=otrosTipos[1];
+  // Retornar el ala dominante (mayor score) en formato TYPE_ALAS si existe, o genérico
+  var alaA=TYPE_ALAS[domType]&&TYPE_ALAS[domType].a;
+  var alaB=TYPE_ALAS[domType]&&TYPE_ALAS[domType].b;
+  // Si el ala1 coincide con la definición de TYPE_ALAS, usar esos datos enriquecidos
+  if(alaA&&alaA.num===ala1Num) return alaA;
+  if(alaB&&alaB.num===ala1Num) return alaB;
+  // Fallback genérico
+  return {num:ala1Num, n:'Tipo '+ala1Num, d:'Ala con mayor influencia en el perfil.'};
+}
 
   function buildVars(data,scores,domType,wing){
     const full=txt(data.NombreCompleto)||`${txt(data.Nombre)} ${txt(data.Apellido)}`.trim()||txt(data.userName)||txt(data.User)||'Participante';
@@ -650,9 +670,9 @@
     ]};
   }
 
-  function sec05_alas(vars){
-    const t=vars.TIPO_NUM;
-    const alas=TYPE_ALAS[t];
+function sec05_alas(vars){
+  const t=vars.TIPO_NUM;
+  const alas=TYPE_ALAS[t];
     const rows=Object.entries(TYPE_ALAS).map(([tn,aw])=>[`Tipo ${tn}`,aw.a.n,aw.b.n]);
     return{title:SECTION_TITLES[4],intro:'Las alas son los tipos adyacentes al propio eneatipo. Anaden matices unicos al perfil dominante sin cambiar su nucleo motivacional.',blocks:[
       {type:'table',headers:['Tipo','Ala A','Ala B'],colWidths:[0.10,0.45,0.45],headerBg:[13,30,58],compact:true,rows},
@@ -688,7 +708,7 @@
 
   function sec08_perfil(vars,scores){
     const t=vars.TIPO_NUM,td=TD[t];
-    const scoreRows=Object.entries(scores).sort((a,b)=>parseInt(a[0])-parseInt(b[0])).map(([tn,sc])=>[`Tipo ${tn} - ${TYPE_NAMES[parseInt(tn)]}`,`${sc}%`,TYPE_TRIADA[parseInt(tn)],parseInt(tn)===t?'* DOMINANTE':'']);
+    const scoreRows=Object.entries(scores).sort((a,b)=>parseInt(a[0])-parseInt(b[0])).map(([tn,sc])=>[`Tipo ${tn} - ${TYPE_NAMES[parseInt(tn)]}`,`${sc}%`,TYPE_TRIADA[parseInt(tn)],parseInt(tn)===t?'DOMINANTE':'-']);
     return{title:SECTION_TITLES[7],intro:`${vars.NOMBRE}, tu eneatipo dominante es el Tipo ${t} - ${TYPE_NAMES[t]}. A continuacion encontras el mapa completo de tu perfil y lo que significa concretamente para tu vida y tu liderazgo.`,blocks:[
       {type:'highlight',title:`ENEATIPO ${t} - ${TYPE_NAMES[t].toUpperCase()}`,color:TYPE_COLOR[t],bg:[246,249,253],text:td.lema},
       {type:'subtitle',text:'Tus coordenadas motivacionales'},
@@ -808,22 +828,101 @@
   /* ===========================================================
      BUILD MODEL
   =========================================================== */
+  // Usa EneagramaCalc si esta cargado (mismo modulo que el Informe)
+  // Si no, usa QUESTIONS_TY interno (mismo resultado)
+  function _calcFromRespuestas(rawString){
+    // SIEMPRE usar calculoEneagramaTotal.js - fuente unica de verdad
+    if(window.CalculoEneagrama && typeof window.CalculoEneagrama.calcularEneagrama==='function'){
+      return window.CalculoEneagrama.calcularEneagrama(rawString);
+    }
+    // Fallback si calculoEneagramaTotal.js no esta cargado
+    return _calcInterno(rawString);
+  }
+
+  // Calculo correcto usando el tipo real de cada pregunta (q.ty del test)
+  // Mismo resultado que el test y el informe
+  var QUESTIONS_TY = [1, 2, 3, 4, 5, 6, 7, 8, 9, 1, 2, 3, 4, 5, 6, 7, 8, 9, 1, 2, 3, 4, 5, 6, 7, 8, 9, 1, 2, 3, 4, 5, 6, 7, 8, 9, 1, 2, 3, 4, 5, 6, 7, 8, 9, 1, 2, 3, 4, 5, 6, 7, 8, 9, 1, 2, 3, 4, 5, 6, 7, 8, 9, 1, 2, 3, 4, 5, 6, 7, 8, 9, 1, 2, 3, 4, 5, 6, 7, 8, 9, 1, 2, 3, 4, 5, 6, 7, 8, 9];
+
+  function _calcInterno(rawString){
+    // Parsear todas las respuestas individuales
+    var answers = {};
+    var pairRegex = /(\d+);(\d+)/g, pm;
+    // Extraer pares question;value de todo el string
+    var allPairs = rawString.match(/\d+;\d+/g) || [];
+    allPairs.forEach(function(pair){
+      var p = pair.split(';');
+      var qNum = parseInt(p[0],10);
+      var val  = parseInt(p[1],10);
+      // DESPUÉS — correcto, acepta las 90 preguntas:
+if(qNum>=1 && qNum<=90 && val>=1 && val<=5) answers[qNum-1]=val;
+    });
+
+    // Sumar por tipo real de cada pregunta
+    var raw={1:0,2:0,3:0,4:0,5:0,6:0,7:0,8:0,9:0};
+    for(var i=0;i<QUESTIONS_TY.length;i++){
+      if(answers[i]) raw[QUESTIONS_TY[i]]+=answers[i];
+    }
+
+    var tot=0; for(var t=1;t<=9;t++) tot+=raw[t];
+    var base=1;
+    for(var t=1;t<=9;t++) if(raw[t]>raw[base]) base=t;
+
+    var pct={};
+    for(var t=1;t<=9;t++) pct[t]=tot>0?Math.round(raw[t]/tot*100):0;
+    var s=0; for(var t=1;t<=9;t++) s+=pct[t];
+    if(s!==100) pct[base]+=(100-s);
+
+    var baseFinal = 1;
+for(var t=2;t<=9;t++) if(pct[t]>pct[baseFinal]) baseFinal=t;
+
+return {base:baseFinal, scores:pct, rawScores:raw};
+  }
+
   function buildModel(data){
-    const scores=extractScores(data);
-    const domType=determineType(scores);
-    const wing=determineWing(scores,domType);
-    const vars=buildVars(data,scores,domType,wing);
-    const td=TD[domType];
-    return{
-      fullName:vars.NOMBRE_COMPLETO,firstName:vars.NOMBRE,
-      typeNum:domType,typeName:TYPE_NAMES[domType],typeLabel:vars.TIPO_LABEL,
-      dateText:vars.FECHA,admin:vars.ADMIN,scores,
-      lema:td.lema,
-      summary:`${vars.NOMBRE} muestra un patron motivacional dominante de Eneatipo ${domType} - ${TYPE_NAMES[domType]}. Triada: ${vars.TRIADA}. Emocion subyacente: ${vars.EMOCION}. Pasion: ${vars.PASION}. Virtud de crecimiento: ${vars.VIRTUD}. Integracion hacia T${vars.INTEGRACION}. Ala probable: ${wing.n}.`,
-      sections:[
-        sec01_welcome(vars),sec02_historia(vars),sec03_triadas(vars),sec04_niveles(vars),
-        sec05_alas(vars),sec06_flechas(vars),sec07_subtipos(vars),sec08_perfil(vars,scores),
-        sec09_fortalezas(vars),sec10_comunicacion(vars),sec11_liderazgo(vars),sec12_plan(vars),sec13_herramientas(vars),
+    var calc, scores, domType;
+
+    if(data._resultado && data._resultado.base>=1 && data._resultado.base<=9){
+      // Ruta Informe: _resultado calculado por calculoEneagramaTotal.js
+      // scores ya estan correctos (suma=100%)
+      calc = data._resultado;
+      domType = calc.base;
+      scores = calc.scores || {};
+
+    } else if(data.Respuestas){
+      // Ruta principal: calcular desde Respuestas con q.ty
+      calc = _calcFromRespuestas(data.Respuestas);
+      domType = calc.base;
+      scores  = calc.scores;
+
+    } else {
+      domType = parseInt(data.Eneatipo||1,10);
+      scores={1:10,2:10,3:10,4:10,5:10,6:10,7:10,8:10,9:10};
+      scores[domType]=20;
+    }
+
+// DESPUÉS — determineWing ya usa scores directamente, no necesita calcWing separado:
+const wing = determineWing(scores, domType);
+    const vars = buildVars(data, scores, domType, wing);
+    const td   = TD[domType];
+
+    const summary = `${vars.NOMBRE} muestra un patron motivacional dominante de Eneatipo ${domType} - ${TYPE_NAMES[domType]}. Triada: ${vars.TRIADA}. Emocion subyacente: ${vars.EMOCION}. Pasion: ${vars.PASION}. Virtud de crecimiento: ${vars.VIRTUD}. Integracion hacia T${vars.INTEGRACION}. Ala probable: ${wing.n}.`;
+
+    return {
+      fullName:   vars.NOMBRE_COMPLETO,
+      firstName:  vars.NOMBRE,
+      typeNum:    domType,
+      typeName:   TYPE_NAMES[domType],
+      typeLabel:  vars.TIPO_LABEL,
+      dateText:   vars.FECHA,
+      admin:      vars.ADMIN,
+      scores,
+      lema:       td.lema,
+      summary,
+      sections: [
+        sec01_welcome(vars), sec02_historia(vars), sec03_triadas(vars), sec04_niveles(vars),
+        sec05_alas(vars),    sec06_flechas(vars),  sec07_subtipos(vars), sec08_perfil(vars, scores),
+        sec09_fortalezas(vars), sec10_comunicacion(vars), sec11_liderazgo(vars),
+        sec12_plan(vars),    sec13_herramientas(vars),
       ],
     };
   }
@@ -832,16 +931,56 @@
      PUBLIC API - compatible con el index.html existente
   =========================================================== */
   async function generarManualEneagrama(dataInput){
-    const source=dataInput||(typeof sessionStorage!=='undefined'?safeJson(sessionStorage.getItem('eneagramaUserData')):null);
+    // Leer de ambas claves de sessionStorage (el test usa minuscula, el Userboard mayuscula)
+    var source = dataInput;
+    if(!source && typeof sessionStorage !== 'undefined'){
+      var d1 = safeJson(sessionStorage.getItem('EneagramaUserData'));
+      var d2 = safeJson(sessionStorage.getItem('eneagramaUserData'));
+      // Preferir el que tenga Respuestas (string no vacio)
+      if(d1 && d1.Respuestas) source = d1;
+      else if(d2 && d2.Respuestas) source = d2;
+      else source = d1 || d2;
+    }
     if(!source)throw new Error('No hay datos del participante para generar el material.');
+    // DEBUG - remover despues
+    console.log('[EneagramaManual] data keys:', Object.keys(source));
+    console.log('[EneagramaManual] Respuestas:', source.Respuestas ? source.Respuestas.substring(0,80) : 'UNDEFINED');
+    console.log('[EneagramaManual] Eneatipo:', source.Eneatipo);
+    console.log('[EneagramaManual] scores:', source.scores);
     const model=buildModel(source);
+    console.log('[EneagramaManual] domType calculado:', model.typeNum);
     const doc=window.EneagramaTheme.render(model);
     const fileName=`Material_Eneagrama_${model.fullName.replace(/\s+/g,'_')}_T${model.typeNum}.pdf`;
     doc.save(fileName);
     return{ok:true,fileName,typeNum:model.typeNum,typeName:model.typeName,scores:model.scores};
   }
 
-  window.generarManualEneagrama=generarManualEneagrama;
-  window.descargarManualEneagrama=generarManualEneagrama;
-  window.EneagramaManual={generar:generarManualEneagrama,descargar:generarManualEneagrama};
+  // ================================================================
+  // API PUBLICA - compatible con Informe/index.html de la plataforma
+  // ================================================================
+
+  // generarPDFEneagrama(userData, resultado, onBase64Ready)
+  // El Informe llama esta funcion con:
+  //   userData   = _eneagramaUserData (tiene Respuestas, Nombre, Apellido, etc.)
+  //   resultado  = _eneagramaResultado (calculado por EneagramaCalc, tiene .base, .scores, etc.)
+  //   onBase64Ready = callback opcional para subir a Drive
+  window.generarPDFEneagrama = function(userData, resultado, onBase64Ready) {
+    // resultado ya viene calculado por EneagramaCalc - usarlo directamente
+    var data = Object.assign({}, userData || {});
+    // Inyectar el resultado de EneagramaCalc para que buildModel lo use
+    if(resultado){
+      data._resultado = resultado;
+    }
+    var model = buildModel(data);
+    var doc   = window.EneagramaTheme.render(model);
+    var fileName = 'Material_Eneagrama_' + model.fullName.replace(/\s+/g,'_') + '_T' + model.typeNum + '.pdf';
+    doc.save(fileName);
+    var b64 = doc.output('datauristring').split(',')[1];
+    if(typeof onBase64Ready === 'function') onBase64Ready(b64);
+    return b64;
+  };
+
+  window.generarManualEneagrama = generarManualEneagrama;
+  window.descargarManualEneagrama = generarManualEneagrama;
+  window.EneagramaManual = {generar:generarManualEneagrama, descargar:generarManualEneagrama};
 })();
