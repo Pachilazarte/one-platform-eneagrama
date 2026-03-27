@@ -677,7 +677,7 @@ function sec05_alas(vars){
     return{title:SECTION_TITLES[4],intro:'Las alas son los tipos adyacentes al propio eneatipo. Anaden matices unicos al perfil dominante sin cambiar su nucleo motivacional.',blocks:[
       {type:'table',headers:['Tipo','Ala A','Ala B'],colWidths:[0.10,0.45,0.45],headerBg:[13,30,58],compact:true,rows},
       {type:'divider'},
-      {type:'highlight',title:`TUS ALAS - TIPO ${t}`,color:TYPE_COLOR[t],bg:[246,249,253],text:`Para tu eneatipo ${t}, las dos alas posibles son:\n\n${alas.a.n}: ${alas.a.d}\n\n${alas.b.n}: ${alas.b.d}\n\nTu ala dominante es aquella que mas reconoces en vos cuando estas bajo presion o en situaciones de alta exigencia. Observa cual de las dos colorea mas tu experiencia cotidiana.`},
+      {type:'highlight',title:`TUS ALAS - TIPO ${t}`,color:TYPE_COLOR[t],bg:[246,249,253],text:`Para tu eneatipo ${t}, las dos alas posibles son:\n\n${alas.a.n}: ${alas.a.d}\n\n${alas.b.n}: ${alas.b.d}\n\nObserva cual colorea mas tu experiencia cotidiana.`},
       {type:'infoCard',title:'COMO IDENTIFICAR TU ALA',color:[13,30,58],text:'La personalidad dominante suele ser la que mas se activo durante la infancia como estrategia de adaptacion. Preguntate: cual de los dos tipos adyacentes reconoces mas en vos cuando estas bajo presion o en situaciones de alta exigencia personal o profesional?'},
     ]};
   }

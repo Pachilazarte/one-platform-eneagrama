@@ -210,7 +210,9 @@
     fr(doc,MX,y,3,bh,C.gold);
     rr(doc,MX+6,y+3,9,9,2,C.ink2);
     sf(doc,'bold',7.5,C.gold2);t(doc,String(idx+1).padStart(2,'0'),MX+10.5,y+9,{align:'center'});
-    sf(doc,'bold',11,C.wh);t(doc,section.title,MX+20,y+10);
+    sf(doc,'bold',10,C.wh);
+const titleLines = sw(doc, section.title, CW-28);
+doc.text(titleLines, MX+20, y+10);
     return y+bh+4;
   }
 
@@ -228,11 +230,11 @@
   function renderSubtitle(doc,y,block,model){
     y=ensureSpace(doc,y+2,26,model);
     sf(doc,'bold',10,block.color||C.ink1);
-    const te=enc(block.text||'');
-    doc.text(te,MX+3,y);
-    const tw=doc.getTextWidth(te);
-    fr(doc,MX+3,y+2,tw+2,0.6,C.gold);
-    return y+6.5;
+const lines=sw(doc,block.text||'',CW-6);
+doc.text(lines,MX+3,y);
+const tw=Math.min(doc.getTextWidth(enc(block.text||'')),CW-6);
+fr(doc,MX+3,y+2,tw+2,0.6,C.gold);
+return y+lines.length*5+1.5;
   }
 
   function renderBullets(doc,y,items,model,opts={}){
@@ -274,17 +276,18 @@
     return y+bh+3;
   }
 
-  function renderInfoCard(doc,y,block,model){
-    const x=MX+3,tw=CW-3,color=block.color||C.ink1,textW=tw-16;
-    const bLines=sw(doc,block.text||'',textW);
-    const bh=bLines.length*4.8+18;
-    if(y+bh+6>FY-MB)y=newPage(doc,model);
-    rr(doc,x,y,tw,bh,2,C.bg,C.ln,0.2);
-    fr(doc,x,y,tw,8,color);rr(doc,x,y,tw,8,2,color);fr(doc,x,y+5,tw,3,color);
-    sf(doc,'bold',7.5,C.wh);t(doc,(block.title||'').toUpperCase(),x+6,y+6.5);
-    sf(doc,'normal',9.2,C.tx);doc.text(bLines,x+6,y+15);
-    return y+bh+3;
-  }
+function renderInfoCard(doc,y,block,model){
+  const x=MX+3,tw=CW-6,color=block.color||C.ink1;
+  const textX=x+6, textW=PW-MX*2-textX+MX-18;
+  const bLines=sw(doc,block.text||'',textW);
+  const bh=bLines.length*4.8+18;
+  if(y+bh+6>FY-MB)y=newPage(doc,model);
+  rr(doc,x,y,tw,bh,2,C.bg,C.ln,0.2);
+  fr(doc,x,y,tw,8,color);rr(doc,x,y,tw,8,2,color);fr(doc,x,y+5,tw,3,color);
+  sf(doc,'bold',7.5,C.wh);t(doc,(block.title||'').toUpperCase(),textX,y+6.5);
+  sf(doc,'normal',9.2,C.tx);doc.text(bLines,textX,y+15);
+  return y+bh+3;
+}
 
   function renderMetrics(doc,y,items,model){
     const x=MX+3,tw=CW-3,gap=3,n=Math.min(items.length,4),colW=(tw-gap*(n-1))/n;
@@ -371,8 +374,18 @@
     const x=MX+3,tw=CW-3,gap=4,cW=(tw-gap)/2;
     y=ensureSpace(doc,y,18,model);
     if(block.leftTitle||block.rightTitle){
-      if(block.leftTitle){rr(doc,x,y,cW,7.5,1.5,C.ink8,C.ln,0.2);sf(doc,'bold',7.5,C.ink2);t(doc,block.leftTitle,x+4,y+5.5);}
-      if(block.rightTitle){rr(doc,x+cW+gap,y,cW,7.5,1.5,C.ink8,C.ln,0.2);sf(doc,'bold',7.5,C.ink2);t(doc,block.rightTitle,x+cW+gap+4,y+5.5);}
+if(block.leftTitle){
+  rr(doc,x,y,cW,7.5,1.5,C.ink8,C.ln,0.2);
+  sf(doc,'bold',7,C.ink2);
+  const ltL=sw(doc,block.leftTitle,cW-8);
+  doc.text(ltL,x+4,y+5.5);
+}
+if(block.rightTitle){
+  rr(doc,x+cW+gap,y,cW,7.5,1.5,C.ink8,C.ln,0.2);
+  sf(doc,'bold',7,C.ink2);
+  const rtL=sw(doc,block.rightTitle,cW-8);
+  doc.text(rtL,x+cW+gap+4,y+5.5);
+}
       y+=11;
     }
     const lItems=block.leftItems||[],rItems=block.rightItems||[];
@@ -399,7 +412,9 @@
     y=ensureSpace(doc,y,Math.min(est,50),model);
     rr(doc,x,y,tw,11.5,2,C.ink1);fr(doc,x,y,3,11.5,C.gold);
     sf(doc,'bold',6.5,C.gold2);t(doc,(block.label||'ESCENARIO').toUpperCase(),x+6,y+5);
-    sf(doc,'bold',9,C.wh);t(doc,block.title||'',x+6,y+10.5);
+sf(doc,'bold',9,C.wh);
+const scenTitleLines=sw(doc,block.title||'',tw-10);
+doc.text(scenTitleLines,x+6,y+10.5);
     y+=13.5;
     parts.forEach(p=>{
       const pL=sw(doc,p.text,tw-12),pBh=6.5+pL.length*4.2+3;
@@ -412,17 +427,22 @@
     return y+2.5;
   }
 
-  function renderHighlight(doc,y,block,model){
-    const x=MX+3,tw=CW-3,color=block.color||C.ink2;
-    const lines=sw(doc,block.text||'',tw-14);
-    const bh=lines.length*4.5+13;
-    y=ensureSpace(doc,y,bh+3,model);
-    rr(doc,x,y,tw,bh,2,block.bg||C.ink8,C.ln,0.2);
-    fr(doc,x,y,3,bh,color);
-    if(block.title){sf(doc,'bold',7.5,color);t(doc,block.title,x+7,y+6.5);sf(doc,'normal',9.2,C.tx);doc.text(lines,x+7,y+12);}
-    else{sf(doc,'normal',9.2,C.tx);doc.text(lines,x+7,y+7);}
-    return y+bh+3;
+function renderHighlight(doc,y,block,model){
+  const x=MX+3,tw=CW-6,color=block.color||C.ink2;
+  const textX=x+7, textW=PW-MX-textX-6;
+  const lines=sw(doc,block.text||'',textW);
+  const bh=lines.length*4.5+13;
+  y=ensureSpace(doc,y,bh+3,model);
+  rr(doc,x,y,tw,bh,2,block.bg||C.ink8,C.ln,0.2);
+  fr(doc,x,y,3,bh,color);
+  if(block.title){
+    sf(doc,'bold',7.5,color);t(doc,block.title,textX,y+6.5);
+    sf(doc,'normal',9.2,C.tx);doc.text(lines,textX,y+12);
+  } else {
+    sf(doc,'normal',9.2,C.tx);doc.text(lines,textX,y+7);
   }
+  return y+bh+3;
+}
 
   /* ========== RENDER SECTION ========== */
   function renderSection(doc,model,section,idx){
