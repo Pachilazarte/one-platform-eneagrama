@@ -476,7 +476,7 @@ function construirEmailHTML(nombreCompleto, adminName, fecha, pdfUrl) {
   '<tr><td style="padding:20px 30px 30px;text-align:center;">' +
   '<p style="color:#94a3b8;font-size:12px;margin:0 0 4px;">Este es un correo autom&aacute;tico generado por el sistema de evaluaciones ENEAGRAMA.</p>' +
   '<p style="color:#94a3b8;font-size:12px;margin:0 0 10px;">Por favor no responda a este mensaje.</p>' +
-  '<p style="color:#0b4a6e;font-size:13px;font-weight:600;margin:0;">Escencial Consultora</p>' +
+  '<p style="color:#0b4a6e;font-size:13px;font-weight:600;margin:0;">Escencial</p>' +
   '</td></tr>' +
 
   '</table>' +

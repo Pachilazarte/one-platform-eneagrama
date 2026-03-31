@@ -13,7 +13,7 @@
   'use strict';
 
   // ── Config ──────────────────────────────────────────────────────────────
-  var APPS_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbwiNTw_bEsfSyzQmRKbvaXO2eqVFVlNheSHLAQi5-YYMVkyaBCJdO0aaf786N8-a3b1/exec';
+  var APPS_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbyTG4ijRmyn_RdN88lGAudFiXF0_8A78GukRfvCCncO5S7G5wLe938iqveW4EMG1ZAS/exec';
   var NOMBRE_HOJA = 'Respuestas';
 
   // ── Sample data (preview local sin sessionStorage) ───────────────────────
@@ -41,9 +41,32 @@
 
     // 1. Cargar datos
 // DESPUÉS — busca en ambas claves:
-var stored = sessionStorage.getItem('eneagramaUserData') 
+// ── Caché del informe — localStorage, TTL 5 min ──────
+var _INFORME_CACHE_KEY = 'one_informe_' + (sessionStorage.getItem('userName') || 'anon');
+var _INFORME_TTL = 5 * 60 * 1000;
+
+function _saveInformeCache(data) {
+    try { localStorage.setItem(_INFORME_CACHE_KEY, JSON.stringify({ ts: Date.now(), data: data })); } catch(e) {}
+}
+function _loadInformeCache() {
+    try {
+        var p = JSON.parse(localStorage.getItem(_INFORME_CACHE_KEY) || 'null');
+        if (!p || Date.now() - p.ts > _INFORME_TTL) return null;
+        return p.data;
+    } catch(e) { return null; }
+}
+
+// Prioridad: sessionStorage → caché localStorage → sample
+var stored = sessionStorage.getItem('eneagramaUserData')
           || sessionStorage.getItem('EneagramaUserData');
-_userData = stored ? JSON.parse(stored) : SAMPLE_DATA;
+
+if (stored) {
+    _userData = JSON.parse(stored);
+    _saveInformeCache(_userData); // guardar en caché para próxima visita
+} else {
+    var cached = _loadInformeCache();
+    _userData = cached || SAMPLE_DATA;
+}
 
     // 2. Calcular resultado
     _resultado = EneagramaCalc.calcularEneagrama(_userData.Respuestas);

@@ -65,20 +65,28 @@ async function checkTestStatus() {
                 (typeof userData.eneatipo === 'string' && userData.eneatipo.trim() !== '') ||
                 (typeof userData.Eneatipo === 'string' && userData.Eneatipo.trim() !== '');
 
-            if (tieneResultado) {
-                sessionStorage.setItem("EneagramaUserData", JSON.stringify(userData));
-                userResult = userData;
-                showCompletedStatus();
-                enableManualSection(true, userData);
-                setProgress(100);
-                return;
-            }
+if (tieneResultado) {
+    sessionStorage.setItem("EneagramaUserData", JSON.stringify(userData));
+    userResult = userData;
+    showCompletedStatus();
+    enableManualSection(true, userData);
+    setProgress(100);
+    // Caché largo: el test completado es permanente
+    if (typeof window.saveUserStatusCache === 'function') {
+        window.saveUserStatusCache({ tieneResultado: true, userData: userData }, 60);
+    }
+    return;
+}
         }
 
-        userResult = null;
-        showPendingStatus();
-        enableManualSection(false);
-        setProgress(0);
+userResult = null;
+showPendingStatus();
+enableManualSection(false);
+setProgress(0);
+// Caché corto: puede cambiar pronto
+if (typeof window.saveUserStatusCache === 'function') {
+    window.saveUserStatusCache({ tieneResultado: false }, 2);
+}
 
     } catch (error) {
         console.error("Error consultando informes:", error);
