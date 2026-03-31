@@ -467,7 +467,23 @@
             doSend(dom, scores, pct);
         }
 
-        function doSend(dom, scores, pct) {
+function doSend(dom, scores, pct) {
+
+            // ── Pantalla de carga ──────────────────────────────
+            document.getElementById('testScreen').classList.add('hidden');
+            document.getElementById('registrationScreen').classList.add('hidden');
+            document.getElementById('resultScreen').classList.add('hidden');
+            var loadingScreen = document.createElement('div');
+            loadingScreen.id = 'sendingScreen';
+            loadingScreen.style.cssText = 'position:fixed;inset:0;z-index:9999;background:rgba(0,0,0,0.92);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:20px;font-family:Exo 2,sans-serif';
+            loadingScreen.innerHTML =
+                '<img src="../img/one-iconocolor.png" style="width:80px;height:80px;border-radius:50%;animation:spin 1.5s linear infinite" onerror="this.src=\'../img/one-icononegro.png\'">' +
+                '<p style="color:#fff;font-size:1rem;font-weight:600;margin:0">Generando tu informe...</p>' +
+                '<p style="color:#a4a8c0;font-size:0.8rem;margin:0">Por favor esperá unos segundos</p>' +
+                '<style>@keyframes spin{to{transform:rotate(360deg)}}</style>';
+            document.body.appendChild(loadingScreen);
+            // ──────────────────────────────────────────────────
+
             var sess  = getSession();
             var now   = new Date();
             var fecha = now.toLocaleString('es-AR',{
@@ -501,9 +517,13 @@
                 .catch(function(e){console.error('Error guardando fila:',e);});
 
             // Mostrar resultado inmediatamente
-            document.getElementById('testScreen').classList.add('hidden');
-            document.getElementById('registrationScreen').classList.add('hidden');
-            document.getElementById('resultScreen').classList.remove('hidden');
+setTimeout(function() {
+    var sending = document.getElementById('sendingScreen');
+    if (sending) sending.remove();
+    document.getElementById('testScreen').classList.add('hidden');
+    document.getElementById('registrationScreen').classList.add('hidden');
+    document.getElementById('resultScreen').classList.remove('hidden');
+}, 8000); // 8 segundos — suficiente para que el PDF se genere y suba
         }
 
         /* ══════════════════════════════════════════════════════════
@@ -529,6 +549,12 @@
         INIT
         ══════════════════════════════════════════════════════════ */
 function init() {
+        // ── Limpiar estado anterior ────────────────────────────
+        var oldScreen = document.getElementById('sendingScreen');
+        if (oldScreen) oldScreen.remove();
+        sessionStorage.removeItem('eneagrama_row');
+        sessionStorage.removeItem('eneagrama_id');
+        sessionStorage.removeItem('eneagrama_autoPDF');
         // ── Restaurar borrador si existe ──────────────────────
         var draft = loadTestCache();
         if (draft && Object.keys(draft.answers).length > 0) {

@@ -214,8 +214,21 @@ if (stored) {
 
 function _guardarFilaEnSheets() {
 
+    // ✅ FIX: datos de muestra → nunca enviar al GAS
+    if (_userData === SAMPLE_DATA) {
+        console.log('[Eneagrama] Datos de muestra — omitiendo envío');
+        return;
+    }
+
+    // ✅ FIX: descarga manual → no crear fila nueva
+    var autoPDF      = sessionStorage.getItem('eneagrama_autoPDF');
     var rowExistente = sessionStorage.getItem('eneagrama_row');
     var idExistente  = sessionStorage.getItem('eneagrama_id');
+
+    if (!autoPDF && !rowExistente) {
+        console.log('[Eneagrama] Descarga manual — omitiendo envío');
+        return;
+    }
 
     if (rowExistente && idExistente) {
         _rowNumber   = parseInt(rowExistente, 10);
